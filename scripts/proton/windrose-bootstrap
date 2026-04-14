@@ -1,0 +1,20 @@
+#!/bin/bash
+. "$(dirname "$0")/common"
+. "$(dirname "$0")/defaults"
+. "$(dirname "$0")/windrose-bootstrap-shared"
+
+main() {
+  info "Running windrose-bootstrap"
+  prepareWindroseAppFolders
+  updateOrCreateWindroseServerConfig
+  prepareSteamA2sPythonLibrary
+
+  # no proton bootstrap needed
+
+  initCrontab
+  bootstrapHook
+  supervisorctl start windrose-updater
+  info "Bootstrap complete"
+}
+
+main

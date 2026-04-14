@@ -1,0 +1,45 @@
+#!/bin/bash
+. "$(dirname "$0")/common"
+. "$(dirname "$0")/defaults"
+. "$(dirname "$0")/windrose-updater-shared"
+
+main() {
+  info "Running windrose-updater"
+  update
+  info "windrose-updater complete"
+}
+
+downloadWindrose() {
+  debug "Downloading Windrose server"
+  $steamcmd_path +@sSteamCmdForcePlatformType windows +force_install_dir "$install_path" +login anonymous +app_update $steam_app_id "$GAME_BRANCH $STEAMCMD_ARGS" +quit
+}
+
+checkForUpdates() {
+  local current_version
+  if [ -f "$version_file_path" ]; then
+    current_version=$(cat "$version_file_path")
+  else
+    current_version="0"
+  fi
+
+  latest_version=$(curl -sX GET "https://api.steamcmd.net/v1/info/$steam_app_id" | jq -r ".data.\"$steam_app_id\".depots.branches.$GAME_BRANCH.buildid")
+
+  if [ "$latest_version" == "null" ] || [ "$latest_version" == "-1" ]; then
+    if [ "$current_version" == "0" ]; then
+      warn "Unable to determine latest version of windrose server! No version currently installed, update server anyways"
+      return 0
+    fi
+    warn "Unable to determine latest version of windrose server! No update will be performed"
+    return 1
+  fi
+
+  if [ "$current_version" != "$latest_version" ]; then
+    info "Windrose server needs to be updated"
+    return 0
+  else
+    info "Windrose server is already the latest version"
+    return 1
+  fi
+}
+
+main

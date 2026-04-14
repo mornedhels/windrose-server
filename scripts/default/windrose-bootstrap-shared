@@ -1,0 +1,45 @@
+#!/bin/bash
+. "$(dirname "$0")/common"
+. "$(dirname "$0")/defaults"
+
+prepareWindroseAppFolders() {
+  mkdir -p "$install_path"
+}
+
+initCrontab() {
+  crontab=$(mktemp)
+
+  if [ -n "$UPDATE_CRON" ]; then
+    debug "creating cron for update checks (schedule: $UPDATE_CRON)"
+    echo "$UPDATE_CRON supervisorctl start windrose-updater >/dev/null 2>&1" >>"$crontab"
+  fi
+
+  if [ -n "$BACKUP_CRON" ]; then
+    debug "creating cron for backups (schedule: $BACKUP_CRON)"
+    echo "$BACKUP_CRON supervisorctl start windrose-backup >/dev/null 2>&1" >>"$crontab"
+  fi
+
+  if [ -n "$RESTART_CRON" ]; then
+    debug "creating cron for server restarts (schedule: $RESTART_CRON)"
+    echo "$RESTART_CRON supervisorctl start windrose-restart >/dev/null 2>&1" >>"$crontab"
+  fi
+
+
+  crontab "$crontab"
+  rm -f "$crontab"
+}
+
+prepareSteamA2sPythonLibrary() {
+  pip3 install python-a2s==1.3.0 --break-system-packages
+}
+
+bootstrapHook() {
+  if [ -n "$BOOTSTRAP_HOOK" ]; then
+    info "Running bootstrap hook: $BOOTSTRAP_HOOK"
+    eval "$BOOTSTRAP_HOOK"
+  fi
+}
+
+updateOrCreateWindroseServerConfig() {
+  # TBD
+}

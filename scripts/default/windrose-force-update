@@ -1,0 +1,16 @@
+#!/bin/bash
+. "$(dirname "$0")/common"
+. "$(dirname "$0")/defaults"
+
+main() {
+  info "Force Windrose update"
+  rm -f $version_file_path
+
+  # Remove steamapp manifests to solve steamcmd update issues #119
+  debug "Removing $install_path/$steamapp_path"
+  rm -rf $install_path/$steamapp_path
+
+  supervisorctl start windrose-updater
+}
+
+main

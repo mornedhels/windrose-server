@@ -1,0 +1,37 @@
+#!/bin/bash
+. "$(dirname "$0")/common"
+. "$(dirname "$0")/defaults"
+. "$(dirname "$0")/windrose-bootstrap-shared"
+
+main() {
+  info "Running windrose-bootstrap"
+  prepareWindroseAppFolders
+  updateOrCreateWindroseServerConfig
+  prepareSteamA2sPythonLibrary
+
+  bootstrapWine
+
+  initCrontab
+  bootstrapHook
+  supervisorctl start windrose-updater
+  info "Bootstrap complete"
+}
+
+bootstrapWine() {
+  info "bootstrap wine"
+  export WINEPREFIX=$WINEPREFIX
+  export WINEARCH=$WINEARCH
+  export WINEPATH=$WINEPATH
+  export WINEDEBUG=$WINEDEBUG
+
+  debug "winecfg"
+  winecfg -v win10 >/dev/null 2>&1
+  debug "wineboot"
+  wineboot --init >/dev/null 2>&1
+
+  info "wine version: $(wine --version)"
+
+  info "wine bootstrap finished"
+}
+
+main
