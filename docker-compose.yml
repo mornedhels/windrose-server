@@ -4,8 +4,8 @@ services:
       context: .
       dockerfile: dockerfiles/Dockerfile
       args:
-        WINE_BRANCH: stable
-    image: mornedhels/windrose-server:dev
+        WINE_BRANCH: staging
+    image: mornedhels/windrose-server:dev-wine-staging
     container_name: windrose
     hostname: windrose
     restart: unless-stopped
@@ -14,8 +14,8 @@ services:
       - "15637:15637/udp"
     volumes:
       - ./game:/opt/windrose
-#    devices:
-#      - /dev/ntsync:/dev/ntsync
+    devices:
+      - /dev/ntsync:/dev/ntsync
     environment:
       - SERVER_NAME=MornedhelsTest
       - PUID=4711

@@ -12,8 +12,8 @@ services:
       - "15637:15637/udp"
     volumes:
       - ./game:/opt/windrose
-#    devices:
-#      - /dev/ntsync:/dev/ntsync
+    devices:
+      - /dev/ntsync:/dev/ntsync
     environment:
       - SERVER_NAME=MornedhelsTest
       - PUID=4711
