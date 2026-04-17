@@ -6,8 +6,7 @@
 main() {
   info "Running windrose-bootstrap"
   prepareWindroseAppFolders
-  updateOrCreateWindroseServerConfig
-  prepareSteamA2sPythonLibrary
+  updateWindroseServerConfig
 
   bootstrapWine
 

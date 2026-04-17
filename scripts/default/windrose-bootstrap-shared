@@ -29,10 +29,6 @@ initCrontab() {
   rm -f "$crontab"
 }
 
-prepareSteamA2sPythonLibrary() {
-  pip3 install python-a2s==1.3.0 --break-system-packages
-}
-
 bootstrapHook() {
   if [ -n "$BOOTSTRAP_HOOK" ]; then
     info "Running bootstrap hook: $BOOTSTRAP_HOOK"
@@ -40,6 +36,140 @@ bootstrapHook() {
   fi
 }
 
-updateOrCreateWindroseServerConfig() {
-  # TBD
+snakeToPascal() {
+  local input="$1"
+  local result=""
+  local word
+
+  IFS='_' read -ra parts <<< "$input"
+  for word in "${parts[@]}"; do
+    result+="$(echo "${word:0:1}" | tr '[:lower:]' '[:upper:]')$(echo "${word:1}" | tr '[:upper:]' '[:lower:]')"
+  done
+
+  echo "$result"
+}
+
+isExcludedKey() {
+  local key="$1"
+  case "$key" in
+    PersistentServerId|WorldIslandId|IsPasswordProtected)
+      return 0
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+}
+
+resolveJsonKey() {
+  local env_name="$1"
+  local stripped="${env_name#SERVER_}"
+
+  # Special alias: SERVER_NAME -> ServerName
+  if [ "$stripped" = "NAME" ]; then
+    echo "ServerName"
+    return
+  fi
+
+  snakeToPascal "$stripped"
+}
+
+waitForServerConfig() {
+  local timeout=300
+  local elapsed=0
+
+  info "ServerDescription.json not found - starting updater to generate it"
+  supervisorctl start windrose-updater
+
+  while [ ! -f "$server_config" ]; do
+    if [ "$elapsed" -ge "$timeout" ]; then
+      warn "Timeout waiting for ServerDescription.json after ${timeout}s"
+      return 1
+    fi
+    debug "Waiting for ServerDescription.json to be created..."
+    sleep 2
+    elapsed=$((elapsed + 2))
+  done
+
+  info "ServerDescription.json appeared - waiting 5s for write completion"
+  sleep 5
+
+  info "Stopping windrose-server for config update"
+  supervisorctl stop windrose-server
+
+  return 0
+}
+
+applyServerEnvVars() {
+  local config_tmp
+  config_tmp=$(mktemp)
+  cp "$server_config" "$config_tmp"
+
+  while IFS='=' read -r env_name env_value; do
+    # Skip vars that are not set in the environment (inherited vs explicitly set)
+    if [ -z "${!env_name+x}" ]; then
+      continue
+    fi
+
+    local json_key
+    json_key=$(resolveJsonKey "$env_name")
+
+    if isExcludedKey "$json_key"; then
+      debug "Skipping excluded key: $json_key (from $env_name)"
+      continue
+    fi
+
+    local value="${!env_name}"
+
+    # For non-Password fields, skip if value is empty
+    if [ "$json_key" != "Password" ] && [ -z "$value" ]; then
+      debug "Skipping empty value for $json_key"
+      continue
+    fi
+
+    debug "Updating ServerDescription_Persistent.$json_key from $env_name"
+
+    # Determine value type and apply with jq
+    if [[ "$value" =~ ^[0-9]+$ ]]; then
+      jq --arg key "$json_key" --argjson val "$value" \
+        '.ServerDescription_Persistent[$key] = $val' "$config_tmp" > "${config_tmp}.new" && mv "${config_tmp}.new" "$config_tmp"
+    elif [ "$value" = "true" ] || [ "$value" = "false" ]; then
+      jq --arg key "$json_key" --argjson val "$value" \
+        '.ServerDescription_Persistent[$key] = $val' "$config_tmp" > "${config_tmp}.new" && mv "${config_tmp}.new" "$config_tmp"
+    else
+      jq --arg key "$json_key" --arg val "$value" \
+        '.ServerDescription_Persistent[$key] = $val' "$config_tmp" > "${config_tmp}.new" && mv "${config_tmp}.new" "$config_tmp"
+    fi
+  done < <(env | grep '^SERVER_' | sort)
+
+  # Special case: SERVER_PASSWORD controls IsPasswordProtected
+  if [ -n "${SERVER_PASSWORD+x}" ]; then
+    if [ -n "$SERVER_PASSWORD" ]; then
+      debug "SERVER_PASSWORD is set - enabling password protection"
+      jq '.ServerDescription_Persistent.IsPasswordProtected = true' "$config_tmp" > "${config_tmp}.new" && mv "${config_tmp}.new" "$config_tmp"
+    else
+      debug "SERVER_PASSWORD is empty - disabling password protection"
+      jq '.ServerDescription_Persistent.IsPasswordProtected = false' "$config_tmp" > "${config_tmp}.new" && mv "${config_tmp}.new" "$config_tmp"
+    fi
+  fi
+
+  mv "$config_tmp" "$server_config"
+  info "ServerDescription.json updated successfully"
+}
+
+updateWindroseServerConfig() {
+  if [ ! -f "$server_config" ]; then
+    if ! waitForServerConfig; then
+      warn "Could not obtain ServerDescription.json - skipping config update"
+      return 1
+    fi
+  fi
+
+  # Check if any SERVER_ env vars are set
+  if env | grep -q '^SERVER_'; then
+    info "Applying SERVER_* environment variables to ServerDescription.json"
+    applyServerEnvVars
+  else
+    info "No SERVER_* environment variables set - skipping config update"
+  fi
 }

@@ -3,8 +3,8 @@
 . "$(dirname "$0")/defaults"
 
 pidfile=$windrose_backup_pidfile
-save_dir=""
 backup_dir=""
+worldIslandId=""
 
 main() {
   info "Running windrose-backup"
@@ -18,13 +18,28 @@ prepareBackup() {
     checkLock $pidfile
   fi
 
-  getSaveDir
-  getBackupDir
 
-  if [ ! -f "$save_dir/$savefile_name-index" ]; then
-    warn "Save file not found - aborting backup"
+  if [ ! -d "$saves_dir" ]; then
+    warn "Saves directory not found - aborting backup"
     return
   fi
+
+  if [ ! -f "$server_config" ]; then
+    warn "Server config file not found - aborting backup"
+    return
+  fi
+
+  if ! ls $world_config_glob 1> /dev/null 2>&1; then
+    warn "WorldDescription.json not found - aborting backup"
+    return
+  fi
+
+
+  if ! getWorldIslandId; then
+    warn "Failed to get worldIslandId - aborting backup"
+    return
+  fi
+  getBackupDir
 
   trap shutdown SIGINT SIGTERM
 
@@ -35,49 +50,29 @@ prepareBackup() {
 }
 
 backupAndCleanup() {
-  backup
+  if ! backup; then
+    warn "Backup failed - skipping cleanup"
+    clearLock "$pidfile"
+    return 1
+  fi
   cleanup
   backupPostHook
   clearLock "$pidfile"
 }
 
 backup() {
-  local latest_save_index latest_savefile_name backup_file_name
+  local backup_file_name
   debug "run backup"
-
-  # parse 3ad85aea-index (json) to get latest save file
-  latest_save_index=$(jq -r '.latest' "$save_dir/$savefile_name-index")
-
-  # if index = 0 save game is just $savefile_name otherwise $savefile_name-$index
-  if [ "$latest_save_index" -eq 0 ]; then
-    latest_savefile_name="$savefile_name"
-  else
-    latest_savefile_name="$savefile_name-$latest_save_index"
-  fi
-
-  # check if latest save file exists
-  if [ ! -f "$save_dir/$latest_savefile_name" ]; then
-    warn "Latest save file not found - aborting backup"
-    return
-  fi
 
   backupPreHook
 
-  # create new index file
-  cat > /tmp/$savefile_name-index <<EOF
-  {
-    "latest": 0,
-    "time": $(jq -r '.time' "$save_dir/$savefile_name-index"),
-    "deleted": false
-  }
-EOF
-
-  backup_file_name="$(date +%Y-%m-%d_%H-%M-%S)-$savefile_name.zip"
+  backup_file_name="$(date +%Y-%m-%d_%H-%M-%S)-$worldIslandId.zip"
   info "Backing up save file to $backup_dir/$backup_file_name"
-  debug "zip -j \"$backup_dir/$backup_file_name\" \"$save_dir/$latest_savefile_name\" \"/tmp/$savefile_name-index\""
-  zip -j "$backup_dir/$backup_file_name" "$save_dir/$latest_savefile_name" /tmp/$savefile_name-index
-  debug "echo -ne \"@ $latest_savefile_name\n@=$savefile_name\n\" | zipnote -w \"$backup_dir/$backup_file_name\""
-  echo -ne "@ $latest_savefile_name\n@=$savefile_name\n" | zipnote -w "$backup_dir/$backup_file_name"
+  debug "zip -r \"$backup_dir/$backup_file_name\" \"$saves_dir\" \"$server_config\""
+  if ! zip -r "$backup_dir/$backup_file_name" "$saves_dir" "$server_config"; then
+    warn "Backup zip failed - aborting"
+    return 1
+  fi
 }
 
 cleanup() {
@@ -90,18 +85,7 @@ cleanup() {
   fi
 
   info "Removing old backups with number of backups set to $BACKUP_MAX_COUNT"
-  find "$backup_dir" -type f -printf '%T@ %p\n' | sort -n | cut -d' ' -f 2- | head -n -$BACKUP_MAX_COUNT | xargs rm -fv
-}
-
-getSaveDir() {
-  if [ -z "$SERVER_SAVE_DIR" ]; then
-    SERVER_SAVE_DIR=$(jq -r '.saveDirectory' ${install_path}/windrose_server.json)
-  fi
-  if [[ "$SERVER_SAVE_DIR" == /* ]]; then
-    save_dir="$SERVER_SAVE_DIR"
-  else
-    save_dir="$install_path/$SERVER_SAVE_DIR"
-  fi
+  find "$backup_dir" -type f -name "*.zip" -printf '%T@ %p\n' | sort -n | cut -d' ' -f 2- | head -n -$BACKUP_MAX_COUNT | xargs rm -fv
 }
 
 getBackupDir() {
@@ -129,6 +113,19 @@ backupPostHook() {
 shutdown() {
   debug "Received signal to shut down windrose-backup"
   clearLock "$pidfile"
+}
+
+getWorldIslandId() {
+  local world_description_file
+  world_description_file=$(ls $world_config_glob 2>/dev/null | head -n 1)
+
+  if [ -z "$world_description_file" ]; then
+    warn "WorldDescription.json not found"
+    return 1
+  fi
+
+  worldIslandId=$(basename "$(dirname "$world_description_file")")
+  debug "Extracted worldIslandId: $worldIslandId from $world_description_file"
 }
 
 main

@@ -7,7 +7,7 @@ timeout=60
 kill_signal=INT
 
 cd "$install_path" || fatal "Could not cd $install_path"
-windrose_server="$install_path/$windrose_binary_path"
+windrose_server="$windrose_binary_path"
 
 main() {
   waitForServerDownload

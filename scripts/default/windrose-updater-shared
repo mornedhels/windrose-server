@@ -97,13 +97,51 @@ except Exception as e:
   return 0
 }
 
+getInstalledVersion() {
+  local manifest_path="$install_path/steamapps/appmanifest_$steam_app_id.acf"
+  local installed_buildid
+  REPLY_INSTALLED_VERSION=""
+
+  if [ ! -f "$manifest_path" ]; then
+    debug "[getInstalledVersion] Manifest file not found at $manifest_path"
+    return 1
+  fi
+
+  installed_buildid=$(grep '"buildid"' "$manifest_path" | head -1 | sed 's/.*"\([0-9]*\)".*/\1/')
+
+  if [ -z "$installed_buildid" ]; then
+    debug "[getInstalledVersion] Could not parse buildid from $manifest_path"
+    return 1
+  fi
+
+  debug "[getInstalledVersion] Installed buildid: $installed_buildid"
+  REPLY_INSTALLED_VERSION="$installed_buildid"
+  return 0
+}
+
 setCurrentVersion() {
+  local installed_version
+
+  getInstalledVersion
+  installed_version="$REPLY_INSTALLED_VERSION"
+
+  if [ -n "$installed_version" ]; then
+    if [ "$latest_version" != "null" ] && [ "$latest_version" != "-1" ] && [ "$installed_version" != "$latest_version" ]; then
+      warn "Version mismatch: expected $latest_version from API, but steamcmd installed $installed_version"
+    fi
+    debug "[setCurrentVersion]: $installed_version (from manifest)"
+    echo "$installed_version" >"$version_file_path"
+    return 0
+  fi
+
+  # Fallback: manifest unavailable, use API version
   if [ "$latest_version" == "null" ] || [ "$latest_version" == "-1" ]; then
-    warn "Unable to set current version - latest version is unknown"
+    warn "Unable to set current version - latest version is unknown and manifest is unavailable"
     warn "Next update check will restart the server until version can be determined"
     return 1
   fi
-  debug "[setCurrentVersion]: $latest_version"
+  warn "Could not read installed version from manifest - falling back to API version: $latest_version"
+  debug "[setCurrentVersion]: $latest_version (from API fallback)"
   echo "$latest_version" >"$version_file_path"
 }
 

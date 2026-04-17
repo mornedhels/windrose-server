@@ -3,8 +3,10 @@ install_path=/opt/windrose/server
 version_file_path=/opt/windrose/current_version
 steamcmd_path=/usr/bin/steamcmd
 steam_app_id=4129620
-windrose_binary_path=/R5/Binaries/Win64/WindroseServer-Win64-Shipping.exe
-savefile_name=3ad85aea
+windrose_binary_path=${install_path}/R5/Binaries/Win64/WindroseServer-Win64-Shipping.exe
+server_config=${install_path}/R5/ServerDescription.json
+saves_dir=${install_path}/R5/Saved/SaveProfiles
+world_config_glob=${saves_dir}/Default/RocksDB/*/Worlds/*/WorldDescription.json
 steamapp_path=steamapps
 
 # trap SIGUSR1 as it is being used to check

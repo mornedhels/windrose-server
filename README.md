@@ -15,9 +15,30 @@ image and uses supervisor to handle startup, automatic updates and cleanup.
 
 ## Environment Variables
 
-TBD
+| Variable                   | Required | Default     | Contraints           | Description                                                                                                        | WIP |
+|----------------------------|:--------:|-------------|----------------------|--------------------------------------------------------------------------------------------------------------------|:---:|
+| `SERVER_NAME`              |          |             | string               | The name of the server                                                                                             |     |
+| `SERVER_PASSWORD`          |          |             | string               | Server password. Also sets `IsPasswordProtected` (non-empty=true, empty=false)                                     |     |
+| `SERVER_INVITE_CODE`       |          |             | string               | The invite code for the server                                                                                     |     |
+| `SERVER_MAX_PLAYER_COUNT`  |          |             | integer              | Maximum number of players                                                                                          |     |
+| `SERVER_P2P_PROXY_ADDRESS` |          |             | string (ip)          | P2P proxy address                                                                                                  |     |
+| `PUID`                     |          | `4711`      | integer              | The UID to run server as (file permission)                                                                         |     |
+| `PGID`                     |          | `4711`      | integer              | The GID to run server as (file permission)                                                                         |     |
+| `UPDATE_CRON`              |          |             | string (cron format) | Update game server files cron (eg. `*/30 * * * *` check for updates every 30 minutes)                              |     |
+| `BACKUP_CRON`              |          |             | string (cron format) | Backup game server files cron (eg. `*/15 * * * *` backup saves every 15 minutes) - don't set cron under 10 minutes |     |
+| `BACKUP_DIR`               |          | `./backups` | string               | Folder for backups (relative and absolute paths are supported)                                                     |     |
+| `BACKUP_MAX_COUNT`         |          | `0`         | integer              | Number of backups to keep (0 means infinite)                                                                       |     |
+| `RESTART_CRON`             |          |             | string (cron format) | Restart game server cron (eg. `0 3 * * *` restart server daily at 3)                                               |     |
+| `GAME_BRANCH`              |          | `public`    | string               | Steam branch (eg. testing) of the Enshrouded server                                                                |     |
+| `STEAMCMD_ARGS`            |          | `validate`  | string               | Additional steamcmd args for the updater                                                                           |     |
 
 ⚠️: Work in Progress
+
+> [!NOTE]
+> **Note:** Any `SERVER_*` environment variable is automatically mapped to the corresponding
+> `ServerDescription_Persistent` field in `ServerDescription.json` using PascalCase conversion (e.g.,
+> `SERVER_MY_SETTING` → `MySetting`). The variables `PersistentServerId`, `WorldIslandId`, and `IsPasswordProtected` are
+> excluded from this mapping. If an environment variable is not set, the corresponding field is left unchanged.
 
 ### Additional Information
 
@@ -82,7 +103,6 @@ the environment variables `PUID` and `PGID`.
 docker run -d --name windrose \
   --hostname windrose \
   --restart=unless-stopped \
-  -p 15637:15637/udp \
   -v ./game:/opt/windrose \
   -e SERVER_NAME="Windrose Server" \
   -e UPDATE_CRON="*/30 * * * *" \
@@ -101,8 +121,6 @@ services:
     hostname: windrose
     restart: unless-stopped
     stop_grace_period: 90s
-    ports:
-      - "15637:15637/udp"
     volumes:
       - ./game:/opt/windrose
     # only add ntsync device if your kernel supports it (6.14 or newer)
@@ -126,8 +144,6 @@ services:
     hostname: windrose
     restart: unless-stopped
     stop_grace_period: 90s
-    ports:
-      - "15637:15637/udp"
     volumes:
       - game:/opt/windrose
     # only add ntsync device if your kernel supports it (6.14 or newer)
@@ -144,9 +160,6 @@ volumes:
 ```
 
 ## Backup
-
-> [!WARNING]
-> TBD
 
 The image includes a backup script that creates a zip file of the last saved game state. To enable backups, set
 the `BACKUP_CRON` environment variable. To limit the number of backups, set the `BACKUP_MAX_COUNT` environment variable.
