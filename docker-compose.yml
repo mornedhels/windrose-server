@@ -10,6 +10,9 @@ services:
     hostname: windrose
     restart: unless-stopped
     stop_grace_period: 90s
+    ports:
+      - "7777:7777"
+      - "7777:7777/udp"
     volumes:
       - ./game:/opt/windrose
     devices:

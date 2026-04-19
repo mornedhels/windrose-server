@@ -10,20 +10,22 @@
 Docker image for the game Windrose. The image is based on the [steamcmd](https://hub.docker.com/r/cm2network/steamcmd/)
 image and uses supervisor to handle startup, automatic updates and cleanup.
 
-> [!WARNING]
-> Under construction
-
 ## Environment Variables
 
 ### Server Settings
 
-| Variable                   | Required | Default | Contraints  | Description                                                                    | WIP |
-|----------------------------|:--------:|---------|-------------|--------------------------------------------------------------------------------|:---:|
-| `SERVER_NAME`              |          |         | string      | The name of the server                                                         | ⚠️  |
-| `SERVER_PASSWORD`          |          |         | string      | Server password. Also sets `IsPasswordProtected` (non-empty=true, empty=false) | ⚠️  |
-| `SERVER_INVITE_CODE`       |          |         | string      | The invite code for the server                                                 | ⚠️  |
-| `SERVER_MAX_PLAYER_COUNT`  |          |         | integer     | Maximum number of players                                                      | ⚠️  |
-| `SERVER_P2P_PROXY_ADDRESS` |          |         | string (ip) | P2P proxy address                                                              | ⚠️  |
+| Variable                                  | Default     | Contraints  | Description                                                                                               | WIP |
+|-------------------------------------------|-------------|-------------|-----------------------------------------------------------------------------------------------------------|:---:|
+| `SERVER_NAME`                             |             | string      | The name of the server                                                                                    | ⚠️  |
+| `SERVER_PASSWORD`                         |             | string      | Server password. Also sets `IsPasswordProtected` (non-empty=true, empty=false)                            | ⚠️  |
+| `SERVER_INVITE_CODE`                      |             | string      | The invite code for the server                                                                            | ⚠️  |
+| `SERVER_MAX_PLAYER_COUNT`                 | `8`         | integer     | Maximum number of players                                                                                 | ⚠️  |
+| `SERVER_P2P_PROXY_ADDRESS`                | `127.0.0.1` | string (ip) | P2P proxy address                                                                                         | ⚠️  |
+| `SERVER_USER_SELECTED_REGION`             |             | string      | Specifies the region for the Connection Service. Supported options: SEA, CIS, EU (EU covers both EU & NA) | ⚠️  |
+| `SERVER_USE_DIRECT_CONNECTION`            | `false`     | boolean     | Enable direct connection                                                                                  | ⚠️  |
+| `SERVER_DIRECT_CONNECTION_SERVER_ADDRESS` |             | string (ip) | Direct connection server address                                                                          | ⚠️  |
+| `SERVER_DIRECT_CONNECTION_SERVER_PORT`    | `7777`      | integer     | Direct connection server port                                                                             | ⚠️  |
+| `SERVER_DIRECT_CONNECTION_PROXY_ADDRESS`  | `0.0.0.0`   | string (ip) | Direct connection proxy address                                                                           | ⚠️  |
 
 > [!NOTE]
 > Any `SERVER_*` environment variable is automatically mapped to the corresponding
@@ -33,20 +35,20 @@ image and uses supervisor to handle startup, automatic updates and cleanup.
 
 ### World Settings
 
-| Variable                                              | Required | Default | Contraints | Description                            | WIP |
-|-------------------------------------------------------|:--------:|---------|------------|----------------------------------------|:---:|
-| `WORLD_NAME`                                          |          |         | string     | The world name                         | ⚠️  |
-| `WORLD_PRESET_TYPE`                                   |          |         | string     | World preset type                      | ⚠️  |
-| `WORLD_SETTINGS_COOP__SHARED_QUESTS`                  |          |         | boolean    | Enable shared quests                   | ⚠️  |
-| `WORLD_SETTINGS_EASY_EXPLORE`                         |          |         | boolean    | Enable easy explore mode               | ⚠️  |
-| `WORLD_SETTINGS_MOB_HEALTH_MULTIPLIER`                |          |         | float      | Mob health multiplier                  | ⚠️  |
-| `WORLD_SETTINGS_MOB_DAMAGE_MULTIPLIER`                |          |         | float      | Mob damage multiplier                  | ⚠️  |
-| `WORLD_SETTINGS_SHIPS_HEALTH_MULTIPLIER`              |          |         | float      | Ships health multiplier                | ⚠️  |
-| `WORLD_SETTINGS_SHIPS_DAMAGE_MULTIPLIER`              |          |         | float      | Ships damage multiplier                | ⚠️  |
-| `WORLD_SETTINGS_BOARDING_DIFFICULTY_MULTIPLIER`       |          |         | float      | Boarding difficulty multiplier         | ⚠️  |
-| `WORLD_SETTINGS_COOP__STATS_CORRECTION_MODIFIER`      |          |         | float      | Coop stats correction modifier         | ⚠️  |
-| `WORLD_SETTINGS_COOP__SHIP_STATS_CORRECTION_MODIFIER` |          |         | float      | Coop ship stats correction modifier    | ⚠️  |
-| `WORLD_SETTINGS_COMBAT_DIFFICULTY`                    |          |         | string     | Combat difficulty (Normal, Hard, etc.) | ⚠️  |
+| Variable                                              | Default  | Contraints | Description                            | WIP |
+|-------------------------------------------------------|----------|------------|----------------------------------------|:---:|
+| `WORLD_NAME`                                          |          | string     | The world name                         | ⚠️  |
+| `WORLD_PRESET_TYPE`                                   | `Medium` | string     | World preset type                      | ⚠️  |
+| `WORLD_SETTINGS_COOP__SHARED_QUESTS`                  | `true`   | boolean    | Enable shared quests                   | ⚠️  |
+| `WORLD_SETTINGS_EASY_EXPLORE`                         | `false`  | boolean    | Enable easy explore mode               | ⚠️  |
+| `WORLD_SETTINGS_MOB_HEALTH_MULTIPLIER`                |          | float      | Mob health multiplier                  | ⚠️  |
+| `WORLD_SETTINGS_MOB_DAMAGE_MULTIPLIER`                |          | float      | Mob damage multiplier                  | ⚠️  |
+| `WORLD_SETTINGS_SHIPS_HEALTH_MULTIPLIER`              |          | float      | Ships health multiplier                | ⚠️  |
+| `WORLD_SETTINGS_SHIPS_DAMAGE_MULTIPLIER`              |          | float      | Ships damage multiplier                | ⚠️  |
+| `WORLD_SETTINGS_BOARDING_DIFFICULTY_MULTIPLIER`       |          | float      | Boarding difficulty multiplier         | ⚠️  |
+| `WORLD_SETTINGS_COOP__STATS_CORRECTION_MODIFIER`      |          | float      | Coop stats correction modifier         | ⚠️  |
+| `WORLD_SETTINGS_COOP__SHIP_STATS_CORRECTION_MODIFIER` |          | float      | Coop ship stats correction modifier    | ⚠️  |
+| `WORLD_SETTINGS_COMBAT_DIFFICULTY`                    |          | string     | Combat difficulty (Normal, Hard, etc.) | ⚠️  |
 
 > [!NOTE]
 > Any `WORLD_*` environment variable is automatically mapped to the corresponding field in
@@ -55,17 +57,17 @@ image and uses supervisor to handle startup, automatic updates and cleanup.
 
 ### General Settings
 
-| Variable           | Required | Default     | Contraints           | Description                                                                                                        | WIP |
-|--------------------|:--------:|-------------|----------------------|--------------------------------------------------------------------------------------------------------------------|:---:|
-| `PUID`             |          | `4711`      | integer              | The UID to run server as (file permission)                                                                         |     |
-| `PGID`             |          | `4711`      | integer              | The GID to run server as (file permission)                                                                         |     |
-| `UPDATE_CRON`      |          |             | string (cron format) | Update game server files cron (eg. `*/30 * * * *` check for updates every 30 minutes)                              |     |
-| `BACKUP_CRON`      |          |             | string (cron format) | Backup game server files cron (eg. `*/15 * * * *` backup saves every 15 minutes) - don't set cron under 10 minutes |     |
-| `BACKUP_DIR`       |          | `./backups` | string               | Folder for backups (relative and absolute paths are supported)                                                     |     |
-| `BACKUP_MAX_COUNT` |          | `0`         | integer              | Number of backups to keep (0 means infinite)                                                                       |     |
-| `RESTART_CRON`     |          |             | string (cron format) | Restart game server cron (eg. `0 3 * * *` restart server daily at 3)                                               |     |
-| `GAME_BRANCH`      |          | `public`    | string               | Steam branch (eg. testing) of the Enshrouded server                                                                |     |
-| `STEAMCMD_ARGS`    |          | `validate`  | string               | Additional steamcmd args for the updater                                                                           |     |
+| Variable           | Default     | Contraints           | Description                                                                                                        | WIP |
+|--------------------|-------------|----------------------|--------------------------------------------------------------------------------------------------------------------|:---:|
+| `PUID`             | `4711`      | integer              | The UID to run server as (file permission)                                                                         |     |
+| `PGID`             | `4711`      | integer              | The GID to run server as (file permission)                                                                         |     |
+| `UPDATE_CRON`      |             | string (cron format) | Update game server files cron (eg. `*/30 * * * *` check for updates every 30 minutes)                              |     |
+| `BACKUP_CRON`      |             | string (cron format) | Backup game server files cron (eg. `*/15 * * * *` backup saves every 15 minutes) - don't set cron under 10 minutes |     |
+| `BACKUP_DIR`       | `./backups` | string               | Folder for backups (relative and absolute paths are supported)                                                     |     |
+| `BACKUP_MAX_COUNT` | `0`         | integer              | Number of backups to keep (0 means infinite)                                                                       |     |
+| `RESTART_CRON`     |             | string (cron format) | Restart game server cron (eg. `0 3 * * *` restart server daily at 3)                                               |     |
+| `GAME_BRANCH`      | `public`    | string               | Steam branch (eg. testing) of the Enshrouded server                                                                |     |
+| `STEAMCMD_ARGS`    | `validate`  | string               | Additional steamcmd args for the updater                                                                           |     |
 
 ⚠️: Work in Progress
 
@@ -105,7 +107,12 @@ The scripts will wait for the hook to resolve/return before continuing.
 
 ## Ports (default)
 
-TBD
+Only needed if direct connection is set to true.
+
+| Port     | Description                |
+|----------|----------------------------|
+| 7777/tcp | Game Port (Direct Connect) |
+| 7777/udp | Game Port (Direct Connect) |
 
 ## Volumes
 
@@ -132,6 +139,8 @@ the environment variables `PUID` and `PGID`.
 docker run -d --name windrose \
   --hostname windrose \
   --restart=unless-stopped \
+  -p 7777:7777 \
+  -p 7777:7777/udp \
   -v ./game:/opt/windrose \
   -e SERVER_NAME="Windrose Server" \
   -e UPDATE_CRON="*/30 * * * *" \
@@ -150,6 +159,9 @@ services:
     hostname: windrose
     restart: unless-stopped
     stop_grace_period: 90s
+    ports:
+      - "7777:7777"
+      - "7777:7777/udp"
     volumes:
       - ./game:/opt/windrose
     # only add ntsync device if your kernel supports it (6.14 or newer)
@@ -173,6 +185,9 @@ services:
     hostname: windrose
     restart: unless-stopped
     stop_grace_period: 90s
+    ports:
+      - "7777:7777"
+      - "7777:7777/udp"
     volumes:
       - game:/opt/windrose
     # only add ntsync device if your kernel supports it (6.14 or newer)
