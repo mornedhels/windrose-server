@@ -1,0 +1,21 @@
+#!/bin/bash
+. "$(dirname "$0")/common"
+
+main() {
+  if [ ! -f "$server_config" ]; then
+    error "ServerDescription.json not found - server may not have been started yet"
+    exit 1
+  fi
+
+  local invite_code
+  invite_code=$(jq -r '.ServerDescription_Persistent.InviteCode' "$server_config")
+
+  if [ -z "$invite_code" ] || [ "$invite_code" = "null" ]; then
+    error "InviteCode not found in ServerDescription.json"
+    exit 1
+  fi
+
+  echo "Invite Code: $invite_code"
+}
+
+main

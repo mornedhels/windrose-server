@@ -226,5 +226,9 @@ again. If you want to keep the current savegame, make sure to make a backup befo
   ```bash
   docker compose exec windrose supervisorctl restart windrose-server
   ```
+* **Get Invite Code:**
+  ```bash
+  docker compose exec windrose windrose-invite-code
+  ```
 
 ## Known Issues
