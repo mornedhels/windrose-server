@@ -131,13 +131,13 @@ applyServerEnvVars() {
 
     # Determine value type and apply with jq
     if [[ "$value" =~ ^[0-9]+$ ]]; then
-      jq --arg key "$json_key" --argjson val "$value" \
+      jq --tab --arg key "$json_key" --argjson val "$value" \
         '.ServerDescription_Persistent[$key] = $val' "$config_tmp" > "${config_tmp}.new" && mv "${config_tmp}.new" "$config_tmp"
     elif [ "$value" = "true" ] || [ "$value" = "false" ]; then
-      jq --arg key "$json_key" --argjson val "$value" \
+      jq --tab --arg key "$json_key" --argjson val "$value" \
         '.ServerDescription_Persistent[$key] = $val' "$config_tmp" > "${config_tmp}.new" && mv "${config_tmp}.new" "$config_tmp"
     else
-      jq --arg key "$json_key" --arg val "$value" \
+      jq --tab --arg key "$json_key" --arg val "$value" \
         '.ServerDescription_Persistent[$key] = $val' "$config_tmp" > "${config_tmp}.new" && mv "${config_tmp}.new" "$config_tmp"
     fi
   done < <(env | grep '^SERVER_' | sort)
@@ -146,10 +146,10 @@ applyServerEnvVars() {
   if [ -n "${SERVER_PASSWORD+x}" ]; then
     if [ -n "$SERVER_PASSWORD" ]; then
       debug "SERVER_PASSWORD is set - enabling password protection"
-      jq '.ServerDescription_Persistent.IsPasswordProtected = true' "$config_tmp" > "${config_tmp}.new" && mv "${config_tmp}.new" "$config_tmp"
+      jq --tab '.ServerDescription_Persistent.IsPasswordProtected = true' "$config_tmp" > "${config_tmp}.new" && mv "${config_tmp}.new" "$config_tmp"
     else
       debug "SERVER_PASSWORD is empty - disabling password protection"
-      jq '.ServerDescription_Persistent.IsPasswordProtected = false' "$config_tmp" > "${config_tmp}.new" && mv "${config_tmp}.new" "$config_tmp"
+      jq --tab '.ServerDescription_Persistent.IsPasswordProtected = false' "$config_tmp" > "${config_tmp}.new" && mv "${config_tmp}.new" "$config_tmp"
     fi
   fi
 
@@ -171,5 +171,133 @@ updateWindroseServerConfig() {
     applyServerEnvVars
   else
     info "No SERVER_* environment variables set - skipping config update"
+  fi
+}
+
+resolveWorldSettingsTag() {
+  local env_suffix="$1"
+  local result=""
+  local part
+
+  # Split on __ to get dot-separated segments
+  IFS='§' read -ra segments <<< "${env_suffix//__/§}"
+  for segment in "${segments[@]}"; do
+    if [ -n "$result" ]; then
+      result+="."
+    fi
+    result+="$(snakeToPascal "$segment")"
+  done
+
+  echo "WDS.Parameter.$result"
+}
+
+isExcludedWorldKey() {
+  local key="$1"
+  case "$key" in
+    islandId|IslandId|CreationTime)
+      return 0
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+}
+
+applyWorldEnvVars() {
+  local world_config="$1"
+  local config_tmp
+  config_tmp=$(mktemp)
+  cp "$world_config" "$config_tmp"
+
+  while IFS='=' read -r env_name env_value; do
+    # Skip vars that are not set in the environment
+    if [ -z "${!env_name+x}" ]; then
+      continue
+    fi
+
+    local value="${!env_name}"
+
+    # Skip empty values
+    if [ -z "$value" ]; then
+      debug "Skipping empty value for $env_name"
+      continue
+    fi
+
+    local stripped="${env_name#WORLD_}"
+
+    # Check if this is a WORLD_SETTINGS_ variable
+    if [[ "$stripped" == SETTINGS_* ]]; then
+      local settings_suffix="${stripped#SETTINGS_}"
+      local tag
+      tag=$(resolveWorldSettingsTag "$settings_suffix")
+      local tag_key="{\"TagName\": \"$tag\"}"
+
+      debug "Updating WorldDescription.WorldSettings from $env_name (tag: $tag)"
+
+      if [ "$value" = "true" ] || [ "$value" = "false" ]; then
+        # BoolParameters
+        jq --tab --arg key "$tag_key" --argjson val "$value" \
+          '.WorldDescription.WorldSettings.BoolParameters[$key] = $val' "$config_tmp" > "${config_tmp}.new" && mv "${config_tmp}.new" "$config_tmp"
+      elif [[ "$value" =~ ^[0-9]+\.?[0-9]*$ ]] || [[ "$value" =~ ^\.[0-9]+$ ]]; then
+        # FloatParameters
+        jq --tab --arg key "$tag_key" --argjson val "$value" \
+          '.WorldDescription.WorldSettings.FloatParameters[$key] = $val' "$config_tmp" > "${config_tmp}.new" && mv "${config_tmp}.new" "$config_tmp"
+      else
+        # TagParameters - value is appended to tag name
+        jq --tab --arg key "$tag_key" --arg tag_val "$tag.$value" \
+          '.WorldDescription.WorldSettings.TagParameters[$key] = {"TagName": $tag_val}' "$config_tmp" > "${config_tmp}.new" && mv "${config_tmp}.new" "$config_tmp"
+      fi
+    else
+      # Top-level WorldDescription field
+      local json_key
+      json_key=$(snakeToPascal "$stripped")
+
+      # Special alias: WORLD_NAME -> WorldName, WORLD_PRESET_TYPE -> WorldPresetType
+      if [ "$stripped" = "NAME" ]; then
+        json_key="WorldName"
+      elif [ "$stripped" = "PRESET_TYPE" ]; then
+        json_key="WorldPresetType"
+      fi
+
+      if isExcludedWorldKey "$json_key"; then
+        debug "Skipping excluded key: $json_key (from $env_name)"
+        continue
+      fi
+
+      debug "Updating WorldDescription.$json_key from $env_name"
+
+      if [[ "$value" =~ ^[0-9]+$ ]]; then
+        jq --tab --arg key "$json_key" --argjson val "$value" \
+          '.WorldDescription[$key] = $val' "$config_tmp" > "${config_tmp}.new" && mv "${config_tmp}.new" "$config_tmp"
+      elif [ "$value" = "true" ] || [ "$value" = "false" ]; then
+        jq --tab --arg key "$json_key" --argjson val "$value" \
+          '.WorldDescription[$key] = $val' "$config_tmp" > "${config_tmp}.new" && mv "${config_tmp}.new" "$config_tmp"
+      else
+        jq --tab --arg key "$json_key" --arg val "$value" \
+          '.WorldDescription[$key] = $val' "$config_tmp" > "${config_tmp}.new" && mv "${config_tmp}.new" "$config_tmp"
+      fi
+    fi
+  done < <(env | grep '^WORLD_' | sort)
+
+  mv "$config_tmp" "$world_config"
+  info "WorldDescription.json updated successfully"
+}
+
+updateWindroseWorldConfig() {
+  # Find world config via glob
+  local world_config
+  world_config=$(compgen -G "$world_config_glob" | head -n 1)
+
+  if [ -z "$world_config" ]; then
+    warn "WorldDescription.json not found - skipping world config update"
+    return 1
+  fi
+
+  # Check if any WORLD_ env vars are set
+  if env | grep -q '^WORLD_'; then
+    info "Applying WORLD_* environment variables to WorldDescription.json"
+    applyWorldEnvVars "$world_config"
+  else
+    info "No WORLD_* environment variables set - skipping world config update"
   fi
 }

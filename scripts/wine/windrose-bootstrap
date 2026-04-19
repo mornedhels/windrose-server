@@ -7,6 +7,7 @@ main() {
   info "Running windrose-bootstrap"
   prepareWindroseAppFolders
   updateWindroseServerConfig
+  updateWindroseWorldConfig
 
   bootstrapWine
 
