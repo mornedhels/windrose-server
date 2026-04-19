@@ -15,30 +15,59 @@ image and uses supervisor to handle startup, automatic updates and cleanup.
 
 ## Environment Variables
 
-| Variable                   | Required | Default     | Contraints           | Description                                                                                                        | WIP |
-|----------------------------|:--------:|-------------|----------------------|--------------------------------------------------------------------------------------------------------------------|:---:|
-| `SERVER_NAME`              |          |             | string               | The name of the server                                                                                             |     |
-| `SERVER_PASSWORD`          |          |             | string               | Server password. Also sets `IsPasswordProtected` (non-empty=true, empty=false)                                     |     |
-| `SERVER_INVITE_CODE`       |          |             | string               | The invite code for the server                                                                                     |     |
-| `SERVER_MAX_PLAYER_COUNT`  |          |             | integer              | Maximum number of players                                                                                          |     |
-| `SERVER_P2P_PROXY_ADDRESS` |          |             | string (ip)          | P2P proxy address                                                                                                  |     |
-| `PUID`                     |          | `4711`      | integer              | The UID to run server as (file permission)                                                                         |     |
-| `PGID`                     |          | `4711`      | integer              | The GID to run server as (file permission)                                                                         |     |
-| `UPDATE_CRON`              |          |             | string (cron format) | Update game server files cron (eg. `*/30 * * * *` check for updates every 30 minutes)                              |     |
-| `BACKUP_CRON`              |          |             | string (cron format) | Backup game server files cron (eg. `*/15 * * * *` backup saves every 15 minutes) - don't set cron under 10 minutes |     |
-| `BACKUP_DIR`               |          | `./backups` | string               | Folder for backups (relative and absolute paths are supported)                                                     |     |
-| `BACKUP_MAX_COUNT`         |          | `0`         | integer              | Number of backups to keep (0 means infinite)                                                                       |     |
-| `RESTART_CRON`             |          |             | string (cron format) | Restart game server cron (eg. `0 3 * * *` restart server daily at 3)                                               |     |
-| `GAME_BRANCH`              |          | `public`    | string               | Steam branch (eg. testing) of the Enshrouded server                                                                |     |
-| `STEAMCMD_ARGS`            |          | `validate`  | string               | Additional steamcmd args for the updater                                                                           |     |
+### Server Settings
 
-⚠️: Work in Progress
+| Variable                   | Required | Default | Contraints  | Description                                                                    | WIP |
+|----------------------------|:--------:|---------|-------------|--------------------------------------------------------------------------------|:---:|
+| `SERVER_NAME`              |          |         | string      | The name of the server                                                         | ⚠️  |
+| `SERVER_PASSWORD`          |          |         | string      | Server password. Also sets `IsPasswordProtected` (non-empty=true, empty=false) | ⚠️  |
+| `SERVER_INVITE_CODE`       |          |         | string      | The invite code for the server                                                 | ⚠️  |
+| `SERVER_MAX_PLAYER_COUNT`  |          |         | integer     | Maximum number of players                                                      | ⚠️  |
+| `SERVER_P2P_PROXY_ADDRESS` |          |         | string (ip) | P2P proxy address                                                              | ⚠️  |
 
 > [!NOTE]
-> **Note:** Any `SERVER_*` environment variable is automatically mapped to the corresponding
+> Any `SERVER_*` environment variable is automatically mapped to the corresponding
 > `ServerDescription_Persistent` field in `ServerDescription.json` using PascalCase conversion (e.g.,
 > `SERVER_MY_SETTING` → `MySetting`). The variables `PersistentServerId`, `WorldIslandId`, and `IsPasswordProtected` are
 > excluded from this mapping. If an environment variable is not set, the corresponding field is left unchanged.
+
+### World Settings
+
+| Variable                                              | Required | Default | Contraints | Description                            | WIP |
+|-------------------------------------------------------|:--------:|---------|------------|----------------------------------------|:---:|
+| `WORLD_NAME`                                          |          |         | string     | The world name                         | ⚠️  |
+| `WORLD_PRESET_TYPE`                                   |          |         | string     | World preset type                      | ⚠️  |
+| `WORLD_SETTINGS_COOP__SHARED_QUESTS`                  |          |         | boolean    | Enable shared quests                   | ⚠️  |
+| `WORLD_SETTINGS_EASY_EXPLORE`                         |          |         | boolean    | Enable easy explore mode               | ⚠️  |
+| `WORLD_SETTINGS_MOB_HEALTH_MULTIPLIER`                |          |         | float      | Mob health multiplier                  | ⚠️  |
+| `WORLD_SETTINGS_MOB_DAMAGE_MULTIPLIER`                |          |         | float      | Mob damage multiplier                  | ⚠️  |
+| `WORLD_SETTINGS_SHIPS_HEALTH_MULTIPLIER`              |          |         | float      | Ships health multiplier                | ⚠️  |
+| `WORLD_SETTINGS_SHIPS_DAMAGE_MULTIPLIER`              |          |         | float      | Ships damage multiplier                | ⚠️  |
+| `WORLD_SETTINGS_BOARDING_DIFFICULTY_MULTIPLIER`       |          |         | float      | Boarding difficulty multiplier         | ⚠️  |
+| `WORLD_SETTINGS_COOP__STATS_CORRECTION_MODIFIER`      |          |         | float      | Coop stats correction modifier         | ⚠️  |
+| `WORLD_SETTINGS_COOP__SHIP_STATS_CORRECTION_MODIFIER` |          |         | float      | Coop ship stats correction modifier    | ⚠️  |
+| `WORLD_SETTINGS_COMBAT_DIFFICULTY`                    |          |         | string     | Combat difficulty (Normal, Hard, etc.) | ⚠️  |
+
+> [!NOTE]
+> Any `WORLD_*` environment variable is automatically mapped to the corresponding field in
+> `WorldDescription.json`. Top-level fields use PascalCase conversion (e.g., `WORLD_PRESET_TYPE` → `WorldPresetType`).
+> The fields `islandId` and `CreationTime` are excluded from this mapping.
+
+### General Settings
+
+| Variable           | Required | Default     | Contraints           | Description                                                                                                        | WIP |
+|--------------------|:--------:|-------------|----------------------|--------------------------------------------------------------------------------------------------------------------|:---:|
+| `PUID`             |          | `4711`      | integer              | The UID to run server as (file permission)                                                                         |     |
+| `PGID`             |          | `4711`      | integer              | The GID to run server as (file permission)                                                                         |     |
+| `UPDATE_CRON`      |          |             | string (cron format) | Update game server files cron (eg. `*/30 * * * *` check for updates every 30 minutes)                              |     |
+| `BACKUP_CRON`      |          |             | string (cron format) | Backup game server files cron (eg. `*/15 * * * *` backup saves every 15 minutes) - don't set cron under 10 minutes |     |
+| `BACKUP_DIR`       |          | `./backups` | string               | Folder for backups (relative and absolute paths are supported)                                                     |     |
+| `BACKUP_MAX_COUNT` |          | `0`         | integer              | Number of backups to keep (0 means infinite)                                                                       |     |
+| `RESTART_CRON`     |          |             | string (cron format) | Restart game server cron (eg. `0 3 * * *` restart server daily at 3)                                               |     |
+| `GAME_BRANCH`      |          | `public`    | string               | Steam branch (eg. testing) of the Enshrouded server                                                                |     |
+| `STEAMCMD_ARGS`    |          | `validate`  | string               | Additional steamcmd args for the updater                                                                           |     |
+
+⚠️: Work in Progress
 
 ### Additional Information
 
