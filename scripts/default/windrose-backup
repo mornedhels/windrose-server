@@ -69,7 +69,7 @@ backup() {
   backup_file_name="$(date +%Y-%m-%d_%H-%M-%S)-$worldIslandId.zip"
   info "Backing up save file to $backup_dir/$backup_file_name"
   debug "zip -r \"$backup_dir/$backup_file_name\" \"$saves_dir\" \"$server_config\""
-  if ! zip -r "$backup_dir/$backup_file_name" "$saves_dir" "$server_config"; then
+  if ! zip -q -r "$backup_dir/$backup_file_name" "$saves_dir" "$server_config"; then
     warn "Backup zip failed - aborting"
     return 1
   fi
