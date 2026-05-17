@@ -62,17 +62,27 @@ backupAndCleanup() {
 
 backup() {
   local backup_file_name
+  local server_config_name
   debug "run backup"
 
   backupPreHook
 
+  server_config_name="$(basename "$server_config")"
+
   backup_file_name="$(date +%Y-%m-%d_%H-%M-%S)-$worldIslandId.zip"
   info "Backing up save file to $backup_dir/$backup_file_name"
-  debug "zip -r \"$backup_dir/$backup_file_name\" \"$saves_dir\" \"$server_config\""
-  if ! zip -q -r "$backup_dir/$backup_file_name" "$saves_dir" "$server_config"; then
+
+  # Temporarily copy ServerDescription.json beside RocksDB for flat zip structure
+  cp "$server_config" "$saves_dir_base/$saves_dir_profile/$server_config_name"
+
+  debug "cd \"$saves_dir_base\" && zip -r \"$backup_dir/$backup_file_name\" \"$saves_dir_profile/$saves_dir_rocksdb\" \"$saves_dir_profile/$server_config_name\""
+  if ! (cd "$saves_dir_base" && zip -q -r "$backup_dir/$backup_file_name" "$saves_dir_profile/$saves_dir_rocksdb" "$saves_dir_profile/$server_config_name"); then
+    rm -f "$saves_dir_base/$saves_dir_profile/$server_config_name"
     warn "Backup zip failed - aborting"
     return 1
   fi
+
+  rm -f "$saves_dir_base/$saves_dir_profile/$server_config_name"
 }
 
 cleanup() {
